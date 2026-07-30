@@ -7,7 +7,8 @@ const messages = {
       label: 'Language',
       options: {
         en: 'English',
-        de: 'Deutsch'
+        de: 'Deutsch',
+        ru: 'Русский'
       }
     },
     app: {
@@ -19,6 +20,11 @@ const messages = {
       unsaved: 'Unsaved diagram'
     },
     actions: {
+      validateProcess: {
+        label: 'Validate',
+        ariaLabel: 'Validate the process diagram',
+        title: 'Validate the process diagram for errors'
+      },
       newDiagram: {
         label: 'New diagram',
         ariaLabel: 'Create a new diagram',
@@ -60,7 +66,25 @@ const messages = {
         label: 'Open storage',
         ariaLabel: 'Open workspace storage',
         title: 'Open workspace storage (Ctrl/Cmd+Shift+O)'
+      },
+      fillColor: {
+        label: 'Fill color',
+        ariaLabel: 'Fill color of selected element',
+        title: 'Fill color of selected element'
+      },
+      undo: {
+        label: 'Undo',
+        ariaLabel: 'Undo last action',
+        title: 'Undo last action (Ctrl/Cmd+Z)'
+      },
+      redo: {
+        label: 'Redo',
+        ariaLabel: 'Redo last undone action',
+        title: 'Redo last undone action (Ctrl/Cmd+Y)'
       }
+    },
+    fillColor: {
+      label: 'Fill Color'
     },
     theme: {
       srLabel: 'Toggle theme',
@@ -135,6 +159,33 @@ const messages = {
       folderCreated: 'Folder created.',
       folderCreateFailed: 'Unable to create the folder.'
     },
+    autoSave: {
+      saving: 'Saving...',
+      saved: 'Saved',
+      error: 'Save failed'
+    },
+    processCheck: {
+      valid: '✓ Process is valid — all paths reach an End Event.',
+      issuesFound: 'Found {count} issue(s):',
+      clear: 'Clear',
+      issues: {
+        NO_DEFINITIONS: 'No BPMN definitions found in the diagram.',
+        NO_PROCESS: 'No <bpmn:Process> found in the diagram.',
+        NO_START_EVENT: 'No Start Event found. The process needs at least one Start Event.',
+        NO_END_EVENT: 'No End Event found. The process needs at least one End Event.',
+        START_HAS_INCOMING: '«{name}» has incoming sequence flow — Start Events should only have outgoing flows.',
+        START_NO_OUTGOING: '«{name}» has no outgoing sequence flow — the process starts but goes nowhere.',
+        END_NO_INCOMING: '«{name}» has no incoming sequence flow — nothing reaches it.',
+        END_HAS_OUTGOING: '«{name}» has outgoing sequence flow — End Events should be terminal.',
+        TASK_NO_INCOMING: '«{name}» has no incoming sequence flow — nothing triggers it.',
+        TASK_NO_OUTGOING: '«{name}» has no outgoing sequence flow — the process stops here.',
+        GATEWAY_NO_INCOMING: '«{name}» has no incoming sequence flow.',
+        GATEWAY_NO_OUTGOING: '«{name}» has no outgoing sequence flow — paths end at this gateway.',
+        UNREACHABLE: '«{name}» is not reachable from any Start Event.',
+        DEAD_END: '«{name}» is a dead end — sequence flow stops here without reaching an End Event.',
+        AND_GATEWAY_HINT: '«{name}» (Parallel Gateway) — odd number of AND gateways. Each AND fork should have a matching AND join.'
+      }
+    },
     viewer: {
       missingPath: 'No diagram path provided. Append ?path=orders/process.bpmn to the URL (paths are relative to the diagrams folder).',
       loadError: 'Unable to load diagram. Check the path and try again.'
@@ -145,7 +196,8 @@ const messages = {
       label: 'Sprache',
       options: {
         en: 'Englisch',
-        de: 'Deutsch'
+        de: 'Deutsch',
+        ru: 'Russisch'
       }
     },
     app: {
@@ -157,6 +209,11 @@ const messages = {
       unsaved: 'Nicht gespeichertes Diagramm'
     },
     actions: {
+      validateProcess: {
+        label: 'Prüfen',
+        ariaLabel: 'Das Prozessdiagramm prüfen',
+        title: 'Das Prozessdiagramm auf Fehler prüfen'
+      },
       newDiagram: {
         label: 'Neues Diagramm',
         ariaLabel: 'Ein neues Diagramm erstellen',
@@ -198,7 +255,25 @@ const messages = {
         label: 'Speicher öffnen',
         ariaLabel: 'Arbeitsbereichsspeicher öffnen',
         title: 'Arbeitsbereichsspeicher öffnen (Strg/Befehl+Umschalt+O)'
+      },
+      fillColor: {
+        label: 'Füllfarbe',
+        ariaLabel: 'Füllfarbe des ausgewählten Elements',
+        title: 'Füllfarbe des ausgewählten Elements'
+      },
+      undo: {
+        label: 'Rückgängig',
+        ariaLabel: 'Letzte Aktion rückgängig machen',
+        title: 'Letzte Aktion rückgängig machen (Strg/Befehl+Z)'
+      },
+      redo: {
+        label: 'Wiederholen',
+        ariaLabel: 'Letzte rückgängig gemachte Aktion wiederherstellen',
+        title: 'Letzte rückgängig gemachte Aktion wiederherstellen (Strg/Befehl+Y)'
       }
+    },
+    fillColor: {
+      label: 'Füllfarbe'
     },
     theme: {
       srLabel: 'Theme umschalten',
@@ -273,9 +348,225 @@ const messages = {
       folderCreated: 'Ordner erstellt.',
       folderCreateFailed: 'Ordner konnte nicht erstellt werden.'
     },
+    processCheck: {
+      valid: '✓ Prozess ist gültig — alle Pfade erreichen ein End-Ereignis.',
+      issuesFound: '{count} Problem(e) gefunden:',
+      clear: 'Zurücksetzen',
+      issues: {
+        NO_DEFINITIONS: 'Keine BPMN-Definitionen im Diagramm gefunden.',
+        NO_PROCESS: 'Kein <bpmn:Process> im Diagramm gefunden.',
+        NO_START_EVENT: 'Kein Startereignis gefunden. Der Prozess benötigt mindestens ein Startereignis.',
+        NO_END_EVENT: 'Kein Endereignis gefunden. Der Prozess benötigt mindestens ein Endereignis.',
+        START_HAS_INCOMING: '«{name}» hat eingehenden Sequenzfluss — Startereignisse sollten nur ausgehende Flüsse haben.',
+        START_NO_OUTGOING: '«{name}» hat keinen ausgehenden Sequenzfluss — der Prozess beginnt, geht aber nirgendwo hin.',
+        END_NO_INCOMING: '«{name}» hat keinen eingehenden Sequenzfluss — nichts erreicht es.',
+        END_HAS_OUTGOING: '«{name}» hat ausgehenden Sequenzfluss — Endereignisse sollten terminal sein.',
+        TASK_NO_INCOMING: '«{name}» hat keinen eingehenden Sequenzfluss — nichts löst es aus.',
+        TASK_NO_OUTGOING: '«{name}» hat keinen ausgehenden Sequenzfluss — der Prozess stoppt hier.',
+        GATEWAY_NO_INCOMING: '«{name}» hat keinen eingehenden Sequenzfluss.',
+        GATEWAY_NO_OUTGOING: '«{name}» hat keinen ausgehenden Sequenzfluss — Pfade enden an diesem Gateway.',
+        UNREACHABLE: '«{name}» ist von keinem Startereignis erreichbar.',
+        DEAD_END: '«{name}» ist eine Sackgasse — der Sequenzfluss endet hier ohne ein Endereignis zu erreichen.',
+        AND_GATEWAY_HINT: '«{name}» (Parallel-Gateway) — ungerade Anzahl von AND-Gateways. Jede AND-Verzweigung benötigt eine passende AND-Zusammenführung.'
+      }
+    },
+    autoSave: {
+      saving: 'Speichern...',
+      saved: 'Gespeichert',
+      error: 'Fehler'
+    },
     viewer: {
       missingPath: 'Kein Diagrammpfad angegeben. Hängen Sie ?path=ablage/prozess.bpmn an die URL an (Pfade sind relativ zum Ordner „diagrams“).',
       loadError: 'Diagramm konnte nicht geladen werden. Pfad überprüfen und erneut versuchen.'
+    }
+  },
+  ru: {
+    language: {
+      label: 'Язык',
+      options: {
+        en: 'English',
+        de: 'Deutsch',
+        ru: 'Русский'
+      }
+    },
+    app: {
+      modelerTitle: 'BPMN-редактор',
+      viewerTitle: 'BPMN-просмотрщик'
+    },
+    diagram: {
+      untitled: 'Диаграмма без названия',
+      unsaved: 'Несохранённая диаграмма'
+    },
+    actions: {
+      validateProcess: {
+        label: 'Проверка',
+        ariaLabel: 'Проверить диаграмму процесса на ошибки',
+        title: 'Проверить диаграмму процесса на ошибки'
+      },
+      newDiagram: {
+        label: 'Создать',
+        ariaLabel: 'Создать новую диаграмму',
+        title: 'Создать новую диаграмму (Ctrl/Cmd+N)'
+      },
+      importFile: {
+        label: 'Импорт',
+        ariaLabel: 'Импортировать BPMN-файл',
+        title: 'Импортировать BPMN-файл (Ctrl/Cmd+O)'
+      },
+      downloadDiagram: {
+        label: 'Скачать',
+        ariaLabel: 'Скачать текущую BPMN-диаграмму',
+        title: 'Скачать текущую BPMN-диаграмму'
+      },
+      editXml: {
+        label: 'XML',
+        ariaLabel: 'Открыть редактор XML',
+        title: 'Открыть редактор XML'
+      },
+      saveDiagram: {
+        label: 'Сохранить',
+        ariaLabel: 'Сохранить диаграмму',
+        ariaLabelUnsaved: 'Выберите, куда сохранить диаграмму',
+        title: 'Сохранить диаграмму (Ctrl/Cmd+S, Ctrl/Cmd+Shift+S — сохранить как)',
+        titleUnsaved: 'Выберите, куда сохранить диаграмму (Ctrl/Cmd+S)'
+      },
+      shareDiagram: {
+        label: 'Поделиться',
+        ariaLabel: 'Поделиться ссылкой на диаграмму',
+        title: 'Поделиться ссылкой на диаграмму'
+      },
+      moreActions: {
+        label: 'Ещё',
+        open: 'Показать дополнительные действия',
+        close: 'Скрыть дополнительные действия'
+      },
+      openStorage: {
+        label: 'Файлы',
+        ariaLabel: 'Открыть хранилище',
+        title: 'Открыть хранилище (Ctrl/Cmd+Shift+O)'
+      },
+      fillColor: {
+        label: 'Цвет',
+        ariaLabel: 'Заливка цветом выбранного элемента',
+        title: 'Заливка цветом выбранного элемента'
+      },
+      undo: {
+        label: 'Отмена',
+        ariaLabel: 'Отменить последнее действие',
+        title: 'Отменить последнее действие (Ctrl/Cmd+Z)'
+      },
+      redo: {
+        label: 'Повтор',
+        ariaLabel: 'Повторить отменённое действие',
+        title: 'Повторить отменённое действие (Ctrl/Cmd+Y)'
+      }
+    },
+    fillColor: {
+      label: 'Цвет заливки'
+    },
+    theme: {
+      srLabel: 'Переключить тему',
+      activateDark: 'Включить тёмную тему',
+      activateLight: 'Включить светлую тему',
+      switchToDark: 'Переключить на тёмную тему',
+      switchToLight: 'Переключить на светлую тему',
+      followSystemHint: 'Shift + клик — следовать системной теме',
+      menuLabel: 'Тема'
+    },
+    storage: {
+      title: 'Хранилище',
+      close: 'Закрыть',
+      saveHeading: 'Сохранить диаграмму',
+      saveHint: 'Укажите путь относительно папки diagrams. Создавайте папки по необходимости.',
+      savePathLabel: 'Путь к файлу',
+      savePlaceholder: 'orders/process.bpmn',
+      saveButton: 'Сохранить',
+      createHeading: 'Создать папку',
+      folderPathLabel: 'Путь к папке',
+      folderPlaceholder: 'orders/new-folder',
+      createButton: 'Создать',
+      empty: 'Хранилище пусто.',
+      failed: 'Не удалось загрузить хранилище.'
+    },
+    share: {
+      dialogTitle: 'Поделиться диаграммой',
+      dialogDescription: 'Выберите способ публикации диаграммы.',
+      optionsLegend: 'Способ публикации',
+      sourceTitle: 'Поделиться сохранённым файлом',
+      sourceHint: 'Создать ссылку на файл в хранилище.',
+      snapshotTitle: 'Создать копию-снимок',
+      snapshotHint: 'Сохранить копию с отметкой времени в <code>shared/</code> и поделиться ссылкой.',
+      linkLabel: 'Ссылка',
+      copyLink: 'Копировать',
+      cancel: 'Отмена',
+      generate: 'Создать ссылку',
+      copied: 'Скопировано!',
+      error: {
+        noSource: 'Сохраните диаграмму перед публикацией.',
+        generic: 'Не удалось создать ссылку. Попробуйте ещё раз.',
+        clipboardUnsupported: 'Браузер не поддерживает копирование в буфер обмена.'
+      },
+      alertUnsupported: 'Публикация не поддерживается в этом браузере.'
+    },
+    xmlEditor: {
+      title: 'Редактор XML',
+      description: 'Измените BPMN-код. Некорректный XML не будет импортирован.',
+      label: 'XML диаграммы',
+      apply: 'Применить',
+      cancel: 'Отмена',
+      loadError: 'Не удалось загрузить XML. Попробуйте ещё раз.',
+      importError: 'XML содержит ошибки. Исправьте их и попробуйте снова.'
+    },
+    zoom: {
+      groupLabel: 'Масштаб',
+      in: 'Приблизить',
+      fit: 'По размеру экрана',
+      out: 'Отдалить'
+    },
+    prompts: {
+      provideFilePath: 'Укажите путь для сохранения диаграммы.',
+      provideFolderPath: 'Укажите путь к папке.'
+    },
+    notifications: {
+      newDiagramFailed: 'Не удалось создать диаграмму. Подробности в консоли.',
+      importFailed: 'Не удалось импортировать выбранный файл.',
+      downloadFailed: 'Не удалось скачать диаграмму.',
+      loadFromStorageFailed: 'Не удалось загрузить BPMN-файл из хранилища.',
+      saveSuccess: 'Диаграмма сохранена в хранилище.',
+      saveFailed: 'Не удалось сохранить BPMN-файл.',
+      folderCreated: 'Папка создана.',
+      folderCreateFailed: 'Не удалось создать папку.'
+    },
+    processCheck: {
+      valid: '✓ Процесс корректен — все пути достигают End-события.',
+      issuesFound: 'Найдено ошибок: {count}',
+      clear: 'Сбросить',
+      issues: {
+        NO_DEFINITIONS: 'BPMN-определения не найдены в диаграмме.',
+        NO_PROCESS: 'BPMN-процесс не найден в диаграмме.',
+        NO_START_EVENT: 'Не найден Start Event. Процесс должен содержать хотя бы один Start Event.',
+        NO_END_EVENT: 'Не найден End Event. Процесс должен содержать хотя бы один End Event.',
+        START_HAS_INCOMING: '«{name}» имеет входящий поток — Start Event должен иметь только исходящие потоки.',
+        START_NO_OUTGOING: '«{name}» не имеет исходящего потока — процесс начинается, но никуда не ведёт.',
+        END_NO_INCOMING: '«{name}» не имеет входящего потока — ничто не достигает его.',
+        END_HAS_OUTGOING: '«{name}» имеет исходящий поток — End Event должен быть терминальным.',
+        TASK_NO_INCOMING: '«{name}» не имеет входящего потока — ничто не запускает его.',
+        TASK_NO_OUTGOING: '«{name}» не имеет исходящего потока — процесс останавливается здесь.',
+        GATEWAY_NO_INCOMING: '«{name}» не имеет входящего потока.',
+        GATEWAY_NO_OUTGOING: '«{name}» не имеет исходящего потока — пути заканчиваются на этом gateway.',
+        UNREACHABLE: '«{name}» недостижим из Start Event.',
+        DEAD_END: '«{name}» — тупик: поток обрывается, не достигнув End Event.',
+        AND_GATEWAY_HINT: '«{name}» (Parallel Gateway) — нечётное количество AND-шлюзов. У каждого AND-разветвления должен быть парный AND-схождение.'
+      }
+    },
+    autoSave: {
+      saving: 'Сохранение...',
+      saved: 'Сохранено',
+      error: 'Ошибка'
+    },
+    viewer: {
+      missingPath: 'Путь к диаграмме не указан. Добавьте ?path=orders/process.bpmn к URL.',
+      loadError: 'Не удалось загрузить диаграмму. Проверьте путь.'
     }
   }
 };
@@ -389,8 +680,14 @@ export function initializeLocale() {
   return currentLocale;
 }
 
-export function t(key) {
-  return getMessage(currentLocale, key) ?? getMessage(FALLBACK_LOCALE, key) ?? key;
+export function t(key, params) {
+  let msg = getMessage(currentLocale, key) ?? getMessage(FALLBACK_LOCALE, key) ?? key;
+  if (params && typeof params === 'object') {
+    for (const [k, v] of Object.entries(params)) {
+      msg = msg.replace(`{${k}}`, v);
+    }
+  }
+  return msg;
 }
 
 export function onLocaleChange(listener) {

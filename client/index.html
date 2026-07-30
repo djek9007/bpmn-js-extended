@@ -27,6 +27,7 @@
         <div class="app-title">
           <div class="app-logo" id="app-logo" hidden></div>
           <span id="diagram-name" data-i18n="diagram.untitled">Untitled diagram</span>
+          <span id="auto-save-status" class="auto-save-status" aria-live="polite"></span>
         </div>
         <div class="action-bar">
           <div class="action-group">
@@ -96,6 +97,34 @@
               <span class="sr-only" data-i18n="actions.shareDiagram.label">Share diagram</span>
             </button>
           </div>
+          <div class="action-group undo-redo-group">
+            <button
+              class="button icon-button"
+              id="undo-button"
+              type="button"
+              disabled
+              data-i18n-attrs="aria-label:actions.undo.ariaLabel,title:actions.undo.title"
+            >
+              <svg aria-hidden="true" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1 4 1 10 7 10" />
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+              </svg>
+              <span class="sr-only" data-i18n="actions.undo.label">Undo</span>
+            </button>
+            <button
+              class="button icon-button"
+              id="redo-button"
+              type="button"
+              disabled
+              data-i18n-attrs="aria-label:actions.redo.ariaLabel,title:actions.redo.title"
+            >
+              <svg aria-hidden="true" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10" />
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+              </svg>
+              <span class="sr-only" data-i18n="actions.redo.label">Redo</span>
+            </button>
+          </div>
           <div class="action-group">
             <button
               class="button icon-button file-browser-toggle"
@@ -114,6 +143,54 @@
               </svg>
               <span class="sr-only" data-i18n="actions.openStorage.label">Open storage</span>
             </button>
+          <div class="color-fill-container">
+            <button
+              class="button icon-button"
+              id="color-fill"
+              type="button"
+              disabled
+              data-i18n-attrs="aria-label:actions.fillColor.ariaLabel,title:actions.fillColor.title"
+            >
+              <svg aria-hidden="true" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a1 1 0 0 0-1 1v.17a4 4 0 0 0-3.46 2.21L2.4 14.1a1.39 1.39 0 0 0 .2 1.78l6.1 5.58a1.39 1.39 0 0 0 1.78.2l10.42-6.03A4 4 0 0 0 21 13.53V12a1 1 0 0 0-1-1H4.5" />
+                <path d="M9 7l-1.5 3.5" />
+                <path d="M9 7l5.5 3" />
+              </svg>
+              <span class="sr-only" data-i18n="actions.fillColor.label">Fill color</span>
+            </button>
+            <div class="color-fill-panel hidden" id="color-fill-menu" role="dialog" aria-hidden="true" aria-label="Fill color">
+              <div class="color-fill-section">
+                <span class="color-fill-label" data-i18n="fillColor.label">Fill Color</span>
+                <div class="color-swatches">
+                  <button class="color-swatch" data-color="#d4edda" style="background: #d4edda" aria-label="Soft green"></button>
+                  <button class="color-swatch" data-color="#f8d7da" style="background: #f8d7da" aria-label="Soft red"></button>
+                  <button class="color-swatch" data-color="#cce5ff" style="background: #cce5ff" aria-label="Soft blue"></button>
+                  <button class="color-swatch" data-color="#fff3cd" style="background: #fff3cd" aria-label="Soft yellow"></button>
+                  <button class="color-swatch" data-color="#e2d5f6" style="background: #e2d5f6" aria-label="Soft purple"></button>
+                  <button class="color-swatch color-swatch-reset" data-color="" aria-label="Remove fill" title="Remove fill">
+                    <svg aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                      <line x1="4" y1="4" x2="12" y2="12" />
+                      <line x1="12" y1="4" x2="4" y2="12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="check-container">
+            <button
+              class="button icon-button"
+              id="validate-process"
+              type="button"
+              data-i18n-attrs="aria-label:actions.validateProcess.ariaLabel,title:actions.validateProcess.title"
+            >
+              <svg aria-hidden="true" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+              <span class="sr-only" data-i18n="actions.validateProcess.label">Validate</span>
+            </button>
+            <div class="check-panel hidden" id="validate-menu" role="dialog" aria-hidden="true" aria-label="Process validation results"></div>
+          </div>
           <div class="action-group more-actions-container">
             <button
               class="button icon-button"

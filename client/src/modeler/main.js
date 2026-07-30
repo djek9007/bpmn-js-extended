@@ -1,6 +1,9 @@
 import BpmnModeler from 'bpmn-js/lib/Modeler';
 import camundaPlatformBehaviors from 'camunda-bpmn-js-behaviors/lib/camunda-platform';
 import camundaModdleDescriptors from 'camunda-bpmn-moddle/resources/camunda.json';
+import resizeAllModule from './resizeAll/index.js';
+import colorFillModule from './colorFill/index.js';
+import { setupProcessCheckUI } from './processCheck/processCheckUI.js';
 
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-js.css';
@@ -33,7 +36,9 @@ const DEFAULT_DIAGRAM = `<?xml version="1.0" encoding="UTF-8"?>
 const modeler = new BpmnModeler({
   container: '#canvas',
   additionalModules: [
-    camundaPlatformBehaviors
+    camundaPlatformBehaviors,
+    resizeAllModule,
+    colorFillModule
   ],
   moddleExtensions: {
     camunda: camundaModdleDescriptors
@@ -78,6 +83,13 @@ const zoomOutButton = document.getElementById('zoom-out');
 const zoomFitButton = document.getElementById('zoom-fit');
 const moreActionsToggle = document.getElementById('more-actions-toggle');
 const moreActionsMenu = document.getElementById('more-actions-menu');
+const colorFillButton = document.getElementById('color-fill');
+const colorFillMenu = document.getElementById('color-fill-menu');
+const validateButton = document.getElementById('validate-process');
+const validateMenu = document.getElementById('validate-menu');
+const autoSaveStatus = document.getElementById('auto-save-status');
+const undoButton = document.getElementById('undo-button');
+const redoButton = document.getElementById('redo-button');
 
 const THEME_STORAGE_KEY = 'bpmn-theme-preference';
 const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
@@ -87,6 +99,10 @@ let currentDiagramName = '';
 let currentStoragePath = null;
 let shareOperationInFlight = false;
 let isMoreActionsOpen = false;
+let isColorFillOpen = false;
+let selectedElements = [];
+let autoSaveTimer = null;
+let autoSaveDirty = false;
 
 function readStoredTheme() {
   try {
@@ -188,6 +204,189 @@ function setMoreActionsOpen(open) {
 
 function closeMoreActionsMenu() {
   setMoreActionsOpen(false);
+}
+
+function updateColorFillButtonState() {
+  if (!colorFillButton) return;
+
+  const hasSelection = selectedElements.length > 0;
+  colorFillButton.disabled = !hasSelection;
+
+  if (!hasSelection) {
+    closeColorFillMenu();
+  }
+}
+
+function setColorFillOpen(open) {
+  if (!colorFillButton || !colorFillMenu) {
+    isColorFillOpen = false;
+    return;
+  }
+
+  if (isColorFillOpen === open) return;
+
+  isColorFillOpen = open;
+  colorFillMenu.classList.toggle('hidden', !open);
+  colorFillMenu.setAttribute('aria-hidden', String(!open));
+
+  if (open) {
+    document.addEventListener('pointerdown', handleColorFillPointerDown);
+    document.addEventListener('keydown', handleColorFillKeydown);
+  } else {
+    document.removeEventListener('pointerdown', handleColorFillPointerDown);
+    document.removeEventListener('keydown', handleColorFillKeydown);
+  }
+}
+
+function closeColorFillMenu() {
+  setColorFillOpen(false);
+}
+
+function handleColorFillPointerDown(event) {
+  if (!colorFillMenu || !colorFillButton) return;
+
+  const target = event.target;
+  if (target instanceof Node && (colorFillMenu.contains(target) || colorFillButton.contains(target))) {
+    return;
+  }
+
+  closeColorFillMenu();
+}
+
+function handleColorFillKeydown(event) {
+  if (event.key !== 'Escape') return;
+
+  closeColorFillMenu();
+  if (colorFillButton) colorFillButton.focus();
+}
+
+function applyColorToSelection(color) {
+  if (!selectedElements.length) {
+    console.warn('ColorFill: no elements selected');
+    return;
+  }
+
+  try {
+    const modeling = modeler.get('modeling');
+    if (color) {
+      modeling.setColor(selectedElements, { fill: color });
+    } else {
+      modeling.setColor(selectedElements, { fill: null });
+    }
+    closeColorFillMenu();
+  } catch (error) {
+    console.error('ColorFill: failed to apply color:', error);
+  }
+}
+
+function setActiveColorSwatch(color) {
+  if (!colorFillMenu) return;
+
+  const swatches = colorFillMenu.querySelectorAll('.color-swatch');
+  swatches.forEach((swatch) => {
+    const swatchColor = swatch.dataset.color || '';
+    swatch.classList.toggle('active', swatchColor === color);
+  });
+}
+
+function setAutoSaveStatus(state) {
+  if (!autoSaveStatus) return;
+
+  autoSaveStatus.classList.remove('visible', 'saved', 'saving', 'error');
+
+  if (state === 'hidden') {
+    return;
+  }
+
+  autoSaveStatus.classList.add('visible');
+
+  switch (state) {
+    case 'saving':
+      autoSaveStatus.classList.add('saving');
+      autoSaveStatus.dataset.i18n = 'autoSave.saving';
+      autoSaveStatus.textContent = t('autoSave.saving');
+      break;
+    case 'saved':
+      autoSaveStatus.classList.add('saved');
+      autoSaveStatus.dataset.i18n = 'autoSave.saved';
+      autoSaveStatus.textContent = t('autoSave.saved');
+      // Auto-hide after 3s
+      setTimeout(function() {
+        setAutoSaveStatus('hidden');
+      }, 3000);
+      break;
+    case 'error':
+      autoSaveStatus.classList.add('error');
+      autoSaveStatus.dataset.i18n = 'autoSave.error';
+      autoSaveStatus.textContent = t('autoSave.error');
+      break;
+  }
+}
+
+async function performAutoSave() {
+  if (!currentStoragePath) return;
+
+  setAutoSaveStatus('saving');
+
+  try {
+    const { xml } = await modeler.saveXML({ format: true });
+    const response = await fetch('/api/storage/file', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: currentStoragePath, contents: xml })
+    });
+
+    if (!response.ok) {
+      throw new Error('Auto-save failed');
+    }
+
+    setAutoSaveStatus('saved');
+    autoSaveDirty = false;
+  } catch (error) {
+    console.error('Auto-save failed:', error);
+    setAutoSaveStatus('error');
+  }
+}
+
+function triggerAutoSave() {
+  if (!currentStoragePath) return;
+
+  autoSaveDirty = true;
+
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer);
+  }
+
+  autoSaveTimer = setTimeout(function() {
+    performAutoSave();
+    autoSaveTimer = null;
+  }, 4000);
+}
+
+function cancelAutoSave() {
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = null;
+  }
+  setAutoSaveStatus('hidden');
+}
+
+function updateActiveColorFromSelection() {
+  if (!selectedElements.length) {
+    setActiveColorSwatch('');
+    return;
+  }
+
+  // Get the fill color of the first selected element
+  try {
+    const elementRegistry = modeler.get('elementRegistry');
+    const element = selectedElements[0];
+    const di = element.businessObject?.di || element.di;
+    const fillColor = di?.['background-color'] || '';
+    setActiveColorSwatch(fillColor);
+  } catch {
+    setActiveColorSwatch('');
+  }
 }
 
 function handleMoreActionsPointerDown(event) {
@@ -754,6 +953,24 @@ function triggerRedo() {
   }
 }
 
+function updateUndoRedoButtons() {
+  if (!undoButton || !redoButton) return;
+
+  try {
+    const commandStack = modeler.get('commandStack');
+    if (commandStack) {
+      undoButton.disabled = typeof commandStack.canUndo === 'function'
+        ? !commandStack.canUndo()
+        : true;
+      redoButton.disabled = typeof commandStack.canRedo === 'function'
+        ? !commandStack.canRedo()
+        : true;
+    }
+  } catch (error) {
+    console.warn('Unable to update undo/redo buttons.', error);
+  }
+}
+
 function isEditableTarget(target) {
   if (!(target instanceof Element)) {
     return false;
@@ -1029,6 +1246,7 @@ async function loadDiagramFromStorage(path) {
 }
 
 async function saveDiagramToStorage(path) {
+  cancelAutoSave();
   try {
     const { xml } = await modeler.saveXML({ format: true });
     const response = await fetch('/api/storage/file', {
@@ -1236,6 +1454,14 @@ zoomFitButton?.addEventListener('click', () => {
   }
 });
 
+undoButton?.addEventListener('click', () => {
+  triggerUndo();
+});
+
+redoButton?.addEventListener('click', () => {
+  triggerRedo();
+});
+
 storageToggle?.addEventListener('click', () => toggleStorageOverlay());
 closeStorage?.addEventListener('click', () => toggleStorageOverlay(false));
 
@@ -1247,6 +1473,50 @@ modeler.on('import.done', () => {
 
 modeler.on('commandStack.changed', () => {
   updateDiagramTitle();
+});
+
+modeler.on('commandStack.changed', () => {
+  triggerAutoSave();
+});
+
+modeler.on('commandStack.changed', () => {
+  updateUndoRedoButtons();
+});
+
+modeler.on('selection.changed', (event) => {
+  selectedElements = event.newSelection || [];
+  updateColorFillButtonState();
+  updateActiveColorFromSelection();
+  closeColorFillMenu();
+});
+
+// Initialize undo/redo button states
+updateUndoRedoButtons();
+
+// Process validation UI
+setupProcessCheckUI({
+  modeler,
+  validateButton,
+  validateMenu,
+  t,
+  onLocaleChange
+});
+
+colorFillButton?.addEventListener('click', () => {
+  setColorFillOpen(!isColorFillOpen);
+});
+
+colorFillMenu?.addEventListener('click', (event) => {
+  const swatch = event.target.closest('.color-swatch');
+  if (!swatch) return;
+
+  const color = swatch.dataset.color || null;
+  applyColorToSelection(color);
+});
+
+colorFillMenu?.addEventListener('pointerdown', (event) => {
+  // Prevent the pointerdown from closing the menu
+  event.stopPropagation();
 });
 
 themeToggle?.addEventListener('click', (event) => {
