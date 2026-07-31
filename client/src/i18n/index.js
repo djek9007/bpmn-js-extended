@@ -40,6 +40,16 @@ const messages = {
         ariaLabel: 'Download the current BPMN diagram',
         title: 'Download the current BPMN diagram'
       },
+      exportSvg: {
+        label: 'Export as SVG',
+        ariaLabel: 'Export the diagram as an SVG image',
+        title: 'Export the diagram as an SVG image'
+      },
+      exportPng: {
+        label: 'Export as PNG',
+        ariaLabel: 'Export the diagram as a PNG image',
+        title: 'Export the diagram as a PNG image'
+      },
       editXml: {
         label: 'Edit XML',
         ariaLabel: 'Open the XML source editor',
@@ -153,6 +163,7 @@ const messages = {
       newDiagramFailed: 'Failed to create a new diagram. Check the console for details.',
       importFailed: 'Failed to import the selected file.',
       downloadFailed: 'Failed to download the BPMN diagram.',
+      exportFailed: 'Failed to export the diagram.',
       loadFromStorageFailed: 'Unable to load the BPMN file from storage.',
       saveSuccess: 'Diagram saved to storage.',
       saveFailed: 'Unable to save the BPMN file.',
@@ -228,6 +239,16 @@ const messages = {
         label: 'Herunterladen',
         ariaLabel: 'Das aktuelle BPMN-Diagramm herunterladen',
         title: 'Das aktuelle BPMN-Diagramm herunterladen'
+      },
+      exportSvg: {
+        label: 'Als SVG exportieren',
+        ariaLabel: 'Das Diagramm als SVG-Bild exportieren',
+        title: 'Das Diagramm als SVG-Bild exportieren'
+      },
+      exportPng: {
+        label: 'Als PNG exportieren',
+        ariaLabel: 'Das Diagramm als PNG-Bild exportieren',
+        title: 'Das Diagramm als PNG-Bild exportieren'
       },
       editXml: {
         label: 'XML bearbeiten',
@@ -342,6 +363,7 @@ const messages = {
       newDiagramFailed: 'Neues Diagramm konnte nicht erstellt werden. Details siehe Konsole.',
       importFailed: 'Ausgewählte Datei konnte nicht importiert werden.',
       downloadFailed: 'BPMN-Diagramm konnte nicht heruntergeladen werden.',
+      exportFailed: 'Diagramm konnte nicht exportiert werden.',
       loadFromStorageFailed: 'BPMN-Datei konnte nicht aus dem Speicher geladen werden.',
       saveSuccess: 'Diagramm im Speicher abgelegt.',
       saveFailed: 'BPMN-Datei konnte nicht gespeichert werden.',
@@ -417,6 +439,16 @@ const messages = {
         label: 'Скачать',
         ariaLabel: 'Скачать текущую BPMN-диаграмму',
         title: 'Скачать текущую BPMN-диаграмму'
+      },
+      exportSvg: {
+        label: 'Экспорт в SVG',
+        ariaLabel: 'Экспортировать диаграмму в SVG',
+        title: 'Экспортировать диаграмму в SVG'
+      },
+      exportPng: {
+        label: 'Экспорт в PNG',
+        ariaLabel: 'Экспортировать диаграмму в PNG',
+        title: 'Экспортировать диаграмму в PNG'
       },
       editXml: {
         label: 'XML',
@@ -531,6 +563,7 @@ const messages = {
       newDiagramFailed: 'Не удалось создать диаграмму. Подробности в консоли.',
       importFailed: 'Не удалось импортировать выбранный файл.',
       downloadFailed: 'Не удалось скачать диаграмму.',
+      exportFailed: 'Не удалось экспортировать диаграмму.',
       loadFromStorageFailed: 'Не удалось загрузить BPMN-файл из хранилища.',
       saveSuccess: 'Диаграмма сохранена в хранилище.',
       saveFailed: 'Не удалось сохранить BPMN-файл.',

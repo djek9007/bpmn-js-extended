@@ -13,6 +13,7 @@
     "bpmn-js": "^17.11.0",
     "camunda-bpmn-js-behaviors": "^1.11.2",
     "camunda-bpmn-moddle": "7.0.1",
+    "canvg": "^4.0.3",
     "express": "^4.19.2",
     "morgan": "^1.10.0"
   },

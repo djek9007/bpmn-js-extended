@@ -4,6 +4,7 @@ import camundaModdleDescriptors from 'camunda-bpmn-moddle/resources/camunda.json
 import resizeAllModule from './resizeAll/index.js';
 import colorFillModule from './colorFill/index.js';
 import { setupProcessCheckUI } from './processCheck/processCheckUI.js';
+import { exportPng, exportSvg, sanitizeFilename } from './export/index.js';
 
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-js.css';
@@ -48,6 +49,8 @@ const modeler = new BpmnModeler({
 const newDiagramButton = document.getElementById('new-diagram');
 const importButton = document.getElementById('import-file');
 const downloadButton = document.getElementById('download-diagram');
+const exportSvgButton = document.getElementById('export-svg');
+const exportPngButton = document.getElementById('export-png');
 const editXmlButton = document.getElementById('edit-xml');
 const saveButton = document.getElementById('save-diagram');
 const shareButton = document.getElementById('share-diagram');
@@ -98,6 +101,7 @@ let currentActiveNode;
 let currentDiagramName = '';
 let currentStoragePath = null;
 let shareOperationInFlight = false;
+let exportInFlight = false;
 let isMoreActionsOpen = false;
 let isColorFillOpen = false;
 let selectedElements = [];
@@ -931,6 +935,36 @@ async function downloadCurrentDiagram() {
   }
 }
 
+const EXPORT_HANDLERS = {
+  svg: exportSvg,
+  png: exportPng
+};
+
+async function handleExport(format) {
+  if (exportInFlight) {
+    return;
+  }
+
+  closeMoreActionsMenu();
+  exportInFlight = true;
+
+  try {
+    const exportFile = EXPORT_HANDLERS[format];
+
+    if (!exportFile) {
+      throw new Error(`Unsupported export format: ${format}`);
+    }
+
+    const filename = `${sanitizeFilename(getDiagramDisplayName())}.${format}`;
+    await exportFile(modeler, filename);
+  } catch (error) {
+    console.error(error);
+    alert(t('notifications.exportFailed'));
+  } finally {
+    exportInFlight = false;
+  }
+}
+
 function triggerUndo() {
   try {
     const commandStack = modeler.get('commandStack');
@@ -1353,6 +1387,14 @@ fileInput?.addEventListener('change', async (event) => {
 
 downloadButton?.addEventListener('click', () => {
   void downloadCurrentDiagram();
+});
+
+exportSvgButton?.addEventListener('click', () => {
+  void handleExport('svg');
+});
+
+exportPngButton?.addEventListener('click', () => {
+  void handleExport('png');
 });
 
 editXmlButton?.addEventListener('click', () => {
