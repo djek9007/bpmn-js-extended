@@ -93,6 +93,7 @@ const validateMenu = document.getElementById('validate-menu');
 const autoSaveStatus = document.getElementById('auto-save-status');
 const undoButton = document.getElementById('undo-button');
 const redoButton = document.getElementById('redo-button');
+const deleteButton = document.getElementById('delete-button');
 
 const THEME_STORAGE_KEY = 'bpmn-theme-preference';
 const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
@@ -926,7 +927,9 @@ async function downloadCurrentDiagram() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = 'diagram.bpmn';
+    // Use the actual diagram name if available, otherwise fall back to 'diagram.bpmn'
+    const diagramName = currentDiagramName?.trim() ? currentDiagramName.trim() : 'diagram';
+    anchor.download = `${diagramName}.bpmn`;
     anchor.click();
     URL.revokeObjectURL(url);
   } catch (error) {
@@ -1005,6 +1008,27 @@ function updateUndoRedoButtons() {
   }
 }
 
+function removeSelectedElements() {
+  if (!selectedElements.length) {
+    return;
+  }
+
+  try {
+    const editorActions = modeler.get('editorActions');
+    if (typeof editorActions?.trigger === 'function') {
+      editorActions.trigger('removeSelection');
+    }
+  } catch (error) {
+    console.error('Failed to delete selected elements.', error);
+  }
+}
+
+function updateDeleteButtonState() {
+  if (!deleteButton) return;
+
+  deleteButton.disabled = selectedElements.length === 0;
+}
+
 function isEditableTarget(target) {
   if (!(target instanceof Element)) {
     return false;
@@ -1027,21 +1051,63 @@ function isEditableTarget(target) {
 }
 
 function handleKeyboardShortcuts(event) {
+  // Use event.code (physical key) so shortcuts work with any keyboard layout
+  const code = event.code;
+  const editableTarget = isEditableTarget(event.target);
+
+  const direction = {
+    ArrowLeft: { x: -1, y: 0 },
+    ArrowUp: { x: 0, y: -1 },
+    ArrowRight: { x: 1, y: 0 },
+    ArrowDown: { x: 0, y: 1 }
+  }[code];
+
+  if (
+    direction
+    && selectedElements.length
+    && !editableTarget
+    && !event.ctrlKey
+    && !event.metaKey
+    && !event.altKey
+  ) {
+    const step = event.shiftKey ? 10 : 1;
+
+    event.preventDefault();
+    modeler.get('modeling').moveElements(selectedElements, {
+      x: direction.x * step,
+      y: direction.y * step
+    });
+    return;
+  }
+
+  // Delete selected elements via the Delete or Backspace key
+  if (
+    (code === 'Delete' || code === 'Backspace')
+    && !event.ctrlKey
+    && !event.metaKey
+    && !event.altKey
+  ) {
+    if (editableTarget || event.defaultPrevented) {
+      return;
+    }
+
+    event.preventDefault();
+    removeSelectedElements();
+    return;
+  }
+
   const hasModifier = event.ctrlKey || event.metaKey;
 
   if (!hasModifier || event.defaultPrevented) {
     return;
   }
 
-  const key = event.key.toLowerCase();
-  const editableTarget = isEditableTarget(event.target);
-
-  if (editableTarget && (key === 'z' || key === 'y')) {
+  if (editableTarget && (code === 'KeyZ' || code === 'KeyY')) {
     return;
   }
 
-  switch (key) {
-    case 'z':
+  switch (code) {
+    case 'KeyZ':
       event.preventDefault();
       if (event.shiftKey) {
         triggerRedo();
@@ -1049,15 +1115,15 @@ function handleKeyboardShortcuts(event) {
         triggerUndo();
       }
       break;
-    case 'y':
+    case 'KeyY':
       event.preventDefault();
       triggerRedo();
       break;
-    case 's':
+    case 'KeyS':
       event.preventDefault();
       void handleSaveAction({ saveAs: event.shiftKey });
       break;
-    case 'o':
+    case 'KeyO':
       event.preventDefault();
       if (event.shiftKey) {
         openStorageBrowser();
@@ -1065,7 +1131,7 @@ function handleKeyboardShortcuts(event) {
         openFileImportPicker();
       }
       break;
-    case 'n':
+    case 'KeyN':
       event.preventDefault();
       createNewDiagram();
       break;
@@ -1211,34 +1277,119 @@ function createTreeNode(node) {
   text.textContent = node.name;
   label.append(icon, text);
 
-  item.appendChild(label);
+  if (node.type === 'directory') {
+    const caret = document.createElement('span');
+    caret.className = 'tree-caret';
+    caret.textContent = '▸';
+    caret.setAttribute('aria-hidden', 'true');
+    label.prepend(caret);
+    item.appendChild(label);
 
-  if (node.type === 'file') {
-    item.addEventListener('click', async () => {
-      await loadDiagramFromStorage(node.path);
-      setActiveTreeNode(item);
-      toggleStorageOverlay(false);
-    });
-  } else {
+    let childrenUl = null;
+    let expanded = false;
+    let rendered = false;
+
+    const toggleDirectory = () => {
+      expanded = !expanded;
+      caret.textContent = expanded ? '▾' : '▸';
+      item.classList.toggle('expanded', expanded);
+
+      if (expanded && !rendered) {
+        childrenUl = buildChildrenList(node.children ?? []);
+        li.appendChild(childrenUl);
+        rendered = true;
+      }
+
+      if (childrenUl) {
+        childrenUl.classList.toggle('hidden', !expanded);
+      }
+    };
+
     item.addEventListener('click', (event) => {
       event.stopPropagation();
       setActiveTreeNode(item);
+      toggleDirectory();
       const prefix = node.path ? `${node.path.replace(/\\/g, '/')}/` : '';
       savePathInput.value = prefix;
     });
+
+    li.appendChild(item);
+    return li;
   }
+
+  item.appendChild(label);
+
+  const actions = document.createElement('div');
+  actions.className = 'tree-item-actions';
+
+  const renameBtn = document.createElement('button');
+  renameBtn.type = 'button';
+  renameBtn.className = 'tree-item-rename-button';
+  renameBtn.title = t('actions.renameFile.title');
+  renameBtn.setAttribute('aria-label', t('actions.renameFile.ariaLabel'));
+  renameBtn.innerHTML = `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+  </svg>`;
+
+  renameBtn.addEventListener('click', async (event) => {
+    event.stopPropagation();
+    await renameFileFromStorage(node.path);
+  });
+
+  actions.appendChild(renameBtn);
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.type = 'button';
+  deleteBtn.className = 'tree-item-delete-button';
+  deleteBtn.title = t('actions.deleteFile.title');
+  deleteBtn.setAttribute('aria-label', t('actions.deleteFile.ariaLabel'));
+  deleteBtn.innerHTML = `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 6h18"/>
+    <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/>
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+    <path d="M10 11v6M14 11v6"/>
+  </svg>`;
+
+  deleteBtn.addEventListener('click', async (event) => {
+    event.stopPropagation();
+    const confirmed = confirm(t('prompts.confirmDeleteFile', { name: node.name }));
+    if (!confirmed) {
+      return;
+    }
+    await deleteFileFromStorage(node.path);
+  });
+
+  actions.appendChild(deleteBtn);
+
+  item.appendChild(actions);
+
+  item.addEventListener('click', async () => {
+    await loadDiagramFromStorage(node.path);
+    setActiveTreeNode(item);
+    toggleStorageOverlay(false);
+  });
 
   li.appendChild(item);
 
-  if (node.children && node.children.length) {
-    const ul = document.createElement('ul');
-    node.children.forEach((child) => {
+  return li;
+}
+
+function buildChildrenList(children) {
+  const ul = document.createElement('ul');
+  ul.className = 'tree-children hidden';
+
+  if (children.length) {
+    children.forEach((child) => {
       ul.appendChild(createTreeNode(child));
     });
-    li.appendChild(ul);
+  } else {
+    const empty = document.createElement('li');
+    empty.className = 'tree-empty';
+    empty.textContent = t('storage.empty');
+    ul.appendChild(empty);
   }
 
-  return li;
+  return ul;
 }
 
 function setActiveTreeNode(element) {
@@ -1304,6 +1455,89 @@ async function saveDiagramToStorage(path) {
   } catch (error) {
     console.error(error);
     alert(t('notifications.saveFailed'));
+  }
+}
+
+async function renameFileFromStorage(path) {
+  const normalizedPath = normalizeStoragePath(path);
+  const segments = normalizedPath.split('/');
+  const currentName = segments.pop() || '';
+  const directory = segments.filter(Boolean).join('/');
+  const extensionMatch = currentName.match(/(\.[^.]+)$/);
+  const extension = extensionMatch ? extensionMatch[1] : '.bpmn';
+  const currentBase = currentName.slice(0, currentName.length - extension.length);
+
+  const newName = prompt(t('prompts.renameFile', { name: currentBase }), currentBase);
+
+  if (newName === null) {
+    return;
+  }
+
+  const trimmed = newName.trim();
+
+  if (!trimmed) {
+    alert(t('notifications.renameFailed'));
+    return;
+  }
+
+  const finalName = trimmed.toLowerCase().endsWith(extension.toLowerCase()) ? trimmed : `${trimmed}${extension}`;
+  const newPath = directory ? `${directory}/${finalName}` : finalName;
+
+  if (newPath === normalizedPath) {
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/storage/rename', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ path: normalizedPath, newPath })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to rename file');
+    }
+
+    if (currentStoragePath === normalizedPath) {
+      setDiagramSource(newPath);
+      if (savePathInput) {
+        savePathInput.value = newPath;
+      }
+    }
+
+    await refreshStorageTree();
+    alert(t('notifications.fileRenamed'));
+  } catch (error) {
+    console.error(error);
+    alert(t('notifications.renameFailed'));
+  }
+}
+
+async function deleteFileFromStorage(path) {
+  try {
+    const normalizedPath = normalizeStoragePath(path);
+    const response = await fetch(`/api/storage/file?${new URLSearchParams({ path: normalizedPath })}`, {
+      method: 'DELETE'
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete file');
+    }
+
+    if (currentStoragePath === normalizedPath) {
+      setDiagramSource(null);
+      if (savePathInput) {
+        savePathInput.value = '';
+      }
+    }
+
+    await refreshStorageTree();
+    alert(t('notifications.fileDeleted'));
+  } catch (error) {
+    console.error(error);
+    alert(t('notifications.fileDeleteFailed'));
   }
 }
 
@@ -1504,10 +1738,14 @@ redoButton?.addEventListener('click', () => {
   triggerRedo();
 });
 
+deleteButton?.addEventListener('click', () => {
+  removeSelectedElements();
+});
+
 storageToggle?.addEventListener('click', () => toggleStorageOverlay());
 closeStorage?.addEventListener('click', () => toggleStorageOverlay(false));
 
-document.addEventListener('keydown', handleKeyboardShortcuts);
+window.addEventListener('keydown', handleKeyboardShortcuts, true);
 
 modeler.on('import.done', () => {
   updateDiagramTitle();
@@ -1528,12 +1766,14 @@ modeler.on('commandStack.changed', () => {
 modeler.on('selection.changed', (event) => {
   selectedElements = event.newSelection || [];
   updateColorFillButtonState();
+  updateDeleteButtonState();
   updateActiveColorFromSelection();
   closeColorFillMenu();
 });
 
-// Initialize undo/redo button states
+// Initialize undo/redo and delete button states
 updateUndoRedoButtons();
+updateDeleteButtonState();
 
 // Process validation UI
 setupProcessCheckUI({

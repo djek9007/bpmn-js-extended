@@ -367,6 +367,63 @@
   word-break: break-all;
 }
 
+.tree-caret {
+  flex-shrink: 0;
+  width: 1rem;
+  font-size: 0.7rem;
+  color: var(--storage-hint);
+  user-select: none;
+}
+
+.tree-children.hidden {
+  display: none;
+}
+
+.tree-empty {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.85rem;
+  color: var(--storage-hint);
+  font-style: italic;
+}
+
+.tree-item-delete-button,
+.tree-item-rename-button {
+  background: transparent;
+  border: none;
+  color: var(--button-text);
+  opacity: 0.4;
+  padding: 0.2rem 0.35rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.tree-item:hover .tree-item-delete-button,
+.tree-item:hover .tree-item-rename-button {
+  opacity: 0.7;
+}
+
+.tree-item-delete-button:hover {
+  opacity: 1 !important;
+  background: rgba(220, 53, 69, 0.15);
+  color: #dc3545;
+}
+
+.tree-item-rename-button:hover {
+  opacity: 1 !important;
+  background: rgba(13, 110, 253, 0.15);
+  color: #0d6efd;
+}
+
+.tree-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .file-browser-actions {
   width: 280px;
   display: flex;

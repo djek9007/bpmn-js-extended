@@ -1,6 +1,7 @@
-import ResizeAllRules from './ResizeAllRules.js';
+import ResizeAllRules, { ResizableLabelRenderer } from './ResizeAllRules.js';
 
 export default {
-  __init__: ['resizeAllRules'],
-  resizeAllRules: ['type', ResizeAllRules]
+  __init__: ['resizeAllRules', 'resizableLabelRenderer'],
+  resizeAllRules: ['type', ResizeAllRules],
+  resizableLabelRenderer: ['type', ResizableLabelRenderer]
 };

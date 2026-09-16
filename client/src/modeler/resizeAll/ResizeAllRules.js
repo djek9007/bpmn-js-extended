@@ -1,3 +1,9 @@
+import BaseRenderer from 'diagram-js/lib/draw/BaseRenderer';
+import { isLabel } from 'diagram-js/lib/util/ModelUtil';
+import { append as svgAppend, classes as svgClasses } from 'tiny-svg';
+import { getLabel } from 'bpmn-js/lib/util/LabelUtil';
+import { getLabelColor } from 'bpmn-js/lib/draw/BpmnRenderUtil';
+
 /**
  * Custom rule provider that enables resize handles for ALL BPMN shapes.
  * By default, bpmn-js only allows resize for SubProcess, Lane, Participant,
@@ -30,3 +36,42 @@ export default class ResizeAllRules {
 }
 
 ResizeAllRules.$inject = ['eventBus'];
+
+export class ResizableLabelRenderer extends BaseRenderer {
+  constructor(config, eventBus, textRenderer) {
+    super(eventBus, 1500);
+    this.config = config || {};
+    this.textRenderer = textRenderer;
+  }
+
+  canRender(element) {
+    return isLabel(element);
+  }
+
+  drawShape(parentGfx, element, attrs = {}) {
+    const text = this.textRenderer.createText(getLabel(element), {
+      box: { width: element.width, height: element.height },
+      align: 'center-middle',
+      style: {
+        ...this.textRenderer.getExternalStyle(),
+        fill: getLabelColor(
+          element,
+          this.config.defaultLabelColor,
+          this.config.defaultStrokeColor,
+          attrs.stroke
+        )
+      }
+    });
+
+    svgClasses(text).add('djs-label');
+    svgAppend(parentGfx, text);
+
+    return text;
+  }
+}
+
+ResizableLabelRenderer.$inject = [
+  'config.bpmnRenderer',
+  'eventBus',
+  'textRenderer'
+];

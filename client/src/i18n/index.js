@@ -91,6 +91,21 @@ const messages = {
         label: 'Redo',
         ariaLabel: 'Redo last undone action',
         title: 'Redo last undone action (Ctrl/Cmd+Y)'
+      },
+      delete: {
+        label: 'Delete',
+        ariaLabel: 'Delete selected elements',
+        title: 'Delete selected elements (Delete/Backspace)'
+      },
+      deleteFile: {
+        label: 'Delete file',
+        ariaLabel: 'Delete file',
+        title: 'Delete file'
+      },
+      renameFile: {
+        label: 'Rename file',
+        ariaLabel: 'Rename file',
+        title: 'Rename file'
       }
     },
     fillColor: {
@@ -157,7 +172,9 @@ const messages = {
     },
     prompts: {
       provideFilePath: 'Provide a file path to save the diagram.',
-      provideFolderPath: 'Provide a folder path.'
+      provideFolderPath: 'Provide a folder path.',
+      confirmDeleteFile: 'Are you sure you want to delete file "{name}"?',
+      renameFile: 'Enter a new name for the file "{name}":'
     },
     notifications: {
       newDiagramFailed: 'Failed to create a new diagram. Check the console for details.',
@@ -168,7 +185,11 @@ const messages = {
       saveSuccess: 'Diagram saved to storage.',
       saveFailed: 'Unable to save the BPMN file.',
       folderCreated: 'Folder created.',
-      folderCreateFailed: 'Unable to create the folder.'
+      folderCreateFailed: 'Unable to create the folder.',
+      fileDeleted: 'File deleted.',
+      fileDeleteFailed: 'Unable to delete the file.',
+      fileRenamed: 'File renamed.',
+      renameFailed: 'Unable to rename the file.'
     },
     autoSave: {
       saving: 'Saving...',
@@ -291,6 +312,21 @@ const messages = {
         label: 'Wiederholen',
         ariaLabel: 'Letzte rückgängig gemachte Aktion wiederherstellen',
         title: 'Letzte rückgängig gemachte Aktion wiederherstellen (Strg/Befehl+Y)'
+      },
+      delete: {
+        label: 'Löschen',
+        ariaLabel: 'Ausgewählte Elemente löschen',
+        title: 'Ausgewählte Elemente löschen (Entf/Rücktaste)'
+      },
+      deleteFile: {
+        label: 'Datei löschen',
+        ariaLabel: 'Datei löschen',
+        title: 'Datei löschen'
+      },
+      renameFile: {
+        label: 'Datei umbenennen',
+        ariaLabel: 'Datei umbenennen',
+        title: 'Datei umbenennen'
       }
     },
     fillColor: {
@@ -357,7 +393,9 @@ const messages = {
     },
     prompts: {
       provideFilePath: 'Geben Sie einen Dateipfad zum Speichern des Diagramms an.',
-      provideFolderPath: 'Geben Sie einen Ordnerpfad an.'
+      provideFolderPath: 'Geben Sie einen Ordnerpfad an.',
+      confirmDeleteFile: 'Möchten Sie die Datei „{name}“ wirklich löschen?',
+      renameFile: 'Geben Sie einen neuen Namen für die Datei „{name}“ ein:'
     },
     notifications: {
       newDiagramFailed: 'Neues Diagramm konnte nicht erstellt werden. Details siehe Konsole.',
@@ -368,7 +406,11 @@ const messages = {
       saveSuccess: 'Diagramm im Speicher abgelegt.',
       saveFailed: 'BPMN-Datei konnte nicht gespeichert werden.',
       folderCreated: 'Ordner erstellt.',
-      folderCreateFailed: 'Ordner konnte nicht erstellt werden.'
+      folderCreateFailed: 'Ordner konnte nicht erstellt werden.',
+      fileDeleted: 'Datei gelöscht.',
+      fileDeleteFailed: 'Datei konnte nicht gelöscht werden.',
+      fileRenamed: 'Datei umbenannt.',
+      renameFailed: 'Datei konnte nicht umbenannt werden.'
     },
     processCheck: {
       valid: '✓ Prozess ist gültig — alle Pfade erreichen ein End-Ereignis.',
@@ -491,6 +533,21 @@ const messages = {
         label: 'Повтор',
         ariaLabel: 'Повторить отменённое действие',
         title: 'Повторить отменённое действие (Ctrl/Cmd+Y)'
+      },
+      delete: {
+        label: 'Удалить',
+        ariaLabel: 'Удалить выбранные элементы',
+        title: 'Удалить выбранные элементы (Delete/Backspace)'
+      },
+      deleteFile: {
+        label: 'Удалить файл',
+        ariaLabel: 'Удалить файл',
+        title: 'Удалить файл'
+      },
+      renameFile: {
+        label: 'Переименовать файл',
+        ariaLabel: 'Переименовать файл',
+        title: 'Переименовать файл'
       }
     },
     fillColor: {
@@ -557,7 +614,9 @@ const messages = {
     },
     prompts: {
       provideFilePath: 'Укажите путь для сохранения диаграммы.',
-      provideFolderPath: 'Укажите путь к папке.'
+      provideFolderPath: 'Укажите путь к папке.',
+      confirmDeleteFile: 'Вы уверены, что хотите удалить файл «{name}»?',
+      renameFile: 'Введите новое имя файла «{name}»:'
     },
     notifications: {
       newDiagramFailed: 'Не удалось создать диаграмму. Подробности в консоли.',
@@ -568,7 +627,11 @@ const messages = {
       saveSuccess: 'Диаграмма сохранена в хранилище.',
       saveFailed: 'Не удалось сохранить BPMN-файл.',
       folderCreated: 'Папка создана.',
-      folderCreateFailed: 'Не удалось создать папку.'
+      folderCreateFailed: 'Не удалось создать папку.',
+      fileDeleted: 'Файл удалён.',
+      fileDeleteFailed: 'Не удалось удалить файл.',
+      fileRenamed: 'Файл переименован.',
+      renameFailed: 'Не удалось переименовать файл.'
     },
     processCheck: {
       valid: '✓ Процесс корректен — все пути достигают End-события.',

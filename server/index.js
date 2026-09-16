@@ -172,6 +172,52 @@ app.post('/api/storage/file', async (req, res) => {
   }
 });
 
+app.delete('/api/storage/file', async (req, res) => {
+  const { path: relativePath } = req.query;
+
+  if (!relativePath) {
+    return res.status(400).json({ error: 'Missing path parameter' });
+  }
+
+  try {
+    const absolute = resolveStoragePath(relativePath);
+    const stats = await fs.stat(absolute);
+
+    if (!stats.isFile()) {
+      return res.status(400).json({ error: 'Path must point to a file' });
+    }
+
+    await fs.unlink(absolute);
+    res.status(204).end();
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/storage/rename', async (req, res) => {
+  const { path: sourcePath, newPath } = req.body;
+
+  if (!sourcePath || !newPath) {
+    return res.status(400).json({ error: 'Source path and new path are required' });
+  }
+
+  try {
+    const sourceAbsolute = resolveStoragePath(sourcePath);
+    const targetAbsolute = resolveStoragePath(newPath);
+    const stats = await fs.stat(sourceAbsolute);
+
+    if (!stats.isFile()) {
+      return res.status(400).json({ error: 'Path must point to a file' });
+    }
+
+    await fs.mkdir(path.dirname(targetAbsolute), { recursive: true });
+    await fs.rename(sourceAbsolute, targetAbsolute);
+    res.status(204).end();
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 app.post('/api/storage/directory', async (req, res) => {
   const { path: relativePath } = req.body;
 

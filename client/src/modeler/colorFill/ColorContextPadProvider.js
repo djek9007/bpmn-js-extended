@@ -11,9 +11,10 @@ var POPUP_CLASS = 'djs-color-popup';
 /**
  * Adds a "Fill" button to the context pad that opens a color palette popup.
  */
-export default function ColorContextPadProvider(contextPad, modeling, translate) {
+export default function ColorContextPadProvider(contextPad, modeling, selection, translate) {
   this._contextPad = contextPad;
   this._modeling = modeling;
+  this._selection = selection;
   this._translate = translate;
 
   contextPad.registerProvider(this);
@@ -22,13 +23,22 @@ export default function ColorContextPadProvider(contextPad, modeling, translate)
 ColorContextPadProvider.$inject = [
   'contextPad',
   'modeling',
+  'selection',
   'translate'
 ];
 
 ColorContextPadProvider.prototype.getContextPadEntries = function(element) {
   var modeling = this._modeling;
+  var selection = this._selection;
   var translate = this._translate;
   var contextPad = this._contextPad;
+
+  function getTargets(element) {
+    if (Array.isArray(element)) return element;
+
+    var selected = selection.get();
+    return selected.includes(element) ? selected : [ element ];
+  }
 
   function openColorPalette(event, element) {
     closeExistingPopups();
@@ -54,7 +64,7 @@ ColorContextPadProvider.prototype.getContextPadEntries = function(element) {
       swatch.addEventListener('click', function(e) {
         e.stopPropagation();
         try {
-          modeling.setColor([element], { fill: opt.color });
+          modeling.setColor(getTargets(element), { fill: opt.color });
         } catch (err) {
           console.error('ColorFill: setColor failed', err);
         }
@@ -75,7 +85,7 @@ ColorContextPadProvider.prototype.getContextPadEntries = function(element) {
     resetBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       try {
-        modeling.setColor([element], { fill: null });
+        modeling.setColor(getTargets(element), { fill: null });
       } catch (err) {
         console.error('ColorFill: setColor (reset) failed', err);
       }
@@ -137,3 +147,6 @@ ColorContextPadProvider.prototype.getContextPadEntries = function(element) {
     }
   };
 };
+
+ColorContextPadProvider.prototype.getMultiElementContextPadEntries =
+  ColorContextPadProvider.prototype.getContextPadEntries;
