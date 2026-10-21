@@ -7,17 +7,21 @@
     "dev": "node server/index.js",
     "build": "npm run build:client",
     "build:client": "vite build",
+    "test": "node --test",
     "start": "node server/index.js"
   },
   "dependencies": {
     "bpmn-js": "^17.11.0",
+    "bpmn-moddle": "^10.3.1",
     "camunda-bpmn-js-behaviors": "^1.11.2",
     "camunda-bpmn-moddle": "7.0.1",
     "canvg": "^4.0.3",
     "express": "^4.19.2",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "yet-another-bpmn-auto-layout": "^2.0.2"
   },
   "devDependencies": {
+    "happy-dom": "^21.0.1",
     "vite": "^5.4.8"
   }
 }

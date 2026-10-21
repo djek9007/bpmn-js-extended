@@ -102,6 +102,11 @@ const messages = {
         ariaLabel: 'Delete file',
         title: 'Delete file'
       },
+      deleteFolder: {
+        label: 'Delete folder',
+        ariaLabel: 'Delete folder',
+        title: 'Delete folder'
+      },
       renameFile: {
         label: 'Rename file',
         ariaLabel: 'Rename file',
@@ -132,6 +137,9 @@ const messages = {
       folderPathLabel: 'Folder path',
       folderPlaceholder: 'orders/new-folder',
       createButton: 'Create',
+      searchLabel: 'Search files',
+      searchPlaceholder: 'Search files by name...',
+      searchEmpty: 'No files match your search.',
       empty: 'Storage is empty.',
       failed: 'Failed to load storage.'
     },
@@ -174,6 +182,7 @@ const messages = {
       provideFilePath: 'Provide a file path to save the diagram.',
       provideFolderPath: 'Provide a folder path.',
       confirmDeleteFile: 'Are you sure you want to delete file "{name}"?',
+      confirmDeleteFolder: 'Are you sure you want to delete folder "{name}" and all its contents?',
       renameFile: 'Enter a new name for the file "{name}":'
     },
     notifications: {
@@ -188,8 +197,12 @@ const messages = {
       folderCreateFailed: 'Unable to create the folder.',
       fileDeleted: 'File deleted.',
       fileDeleteFailed: 'Unable to delete the file.',
+      folderDeleted: 'Folder deleted.',
+      folderDeleteFailed: 'Unable to delete the folder.',
       fileRenamed: 'File renamed.',
-      renameFailed: 'Unable to rename the file.'
+      renameFailed: 'Unable to rename the file.',
+      diRepaired: 'The diagram metadata was invalid and has been repaired. Please review the layout before saving.',
+      diGenerated: 'The diagram had no layout data. A layout has been generated — please review it before saving.'
     },
     autoSave: {
       saving: 'Saving...',
@@ -323,6 +336,11 @@ const messages = {
         ariaLabel: 'Datei löschen',
         title: 'Datei löschen'
       },
+      deleteFolder: {
+        label: 'Ordner löschen',
+        ariaLabel: 'Ordner löschen',
+        title: 'Ordner löschen'
+      },
       renameFile: {
         label: 'Datei umbenennen',
         ariaLabel: 'Datei umbenennen',
@@ -353,6 +371,9 @@ const messages = {
       folderPathLabel: 'Ordnerpfad',
       folderPlaceholder: 'ablage/neuer-ordner',
       createButton: 'Erstellen',
+      searchLabel: 'Dateien suchen',
+      searchPlaceholder: 'Dateien nach Namen suchen...',
+      searchEmpty: 'Keine Dateien entsprechen der Suche.',
       empty: 'Der Speicher ist leer.',
       failed: 'Speicher konnte nicht geladen werden.'
     },
@@ -395,6 +416,7 @@ const messages = {
       provideFilePath: 'Geben Sie einen Dateipfad zum Speichern des Diagramms an.',
       provideFolderPath: 'Geben Sie einen Ordnerpfad an.',
       confirmDeleteFile: 'Möchten Sie die Datei „{name}“ wirklich löschen?',
+      confirmDeleteFolder: 'Möchten Sie den Ordner „{name}“ mit seinem gesamten Inhalt wirklich löschen?',
       renameFile: 'Geben Sie einen neuen Namen für die Datei „{name}“ ein:'
     },
     notifications: {
@@ -409,8 +431,12 @@ const messages = {
       folderCreateFailed: 'Ordner konnte nicht erstellt werden.',
       fileDeleted: 'Datei gelöscht.',
       fileDeleteFailed: 'Datei konnte nicht gelöscht werden.',
+      folderDeleted: 'Ordner gelöscht.',
+      folderDeleteFailed: 'Ordner konnte nicht gelöscht werden.',
       fileRenamed: 'Datei umbenannt.',
-      renameFailed: 'Datei konnte nicht umbenannt werden.'
+      renameFailed: 'Datei konnte nicht umbenannt werden.',
+      diRepaired: 'Die Diagramm-Metadaten waren ungültig und wurden repariert. Bitte prüfen Sie das Layout vor dem Speichern.',
+      diGenerated: 'Das Diagramm hatte keine Layout-Daten. Ein Layout wurde generiert — bitte prüfen Sie es vor dem Speichern.'
     },
     processCheck: {
       valid: '✓ Prozess ist gültig — alle Pfade erreichen ein End-Ereignis.',
@@ -544,6 +570,11 @@ const messages = {
         ariaLabel: 'Удалить файл',
         title: 'Удалить файл'
       },
+      deleteFolder: {
+        label: 'Удалить папку',
+        ariaLabel: 'Удалить папку',
+        title: 'Удалить папку'
+      },
       renameFile: {
         label: 'Переименовать файл',
         ariaLabel: 'Переименовать файл',
@@ -574,6 +605,9 @@ const messages = {
       folderPathLabel: 'Путь к папке',
       folderPlaceholder: 'orders/new-folder',
       createButton: 'Создать',
+      searchLabel: 'Поиск файлов',
+      searchPlaceholder: 'Поиск файлов по имени...',
+      searchEmpty: 'Нет файлов, соответствующих поиску.',
       empty: 'Хранилище пусто.',
       failed: 'Не удалось загрузить хранилище.'
     },
@@ -616,6 +650,7 @@ const messages = {
       provideFilePath: 'Укажите путь для сохранения диаграммы.',
       provideFolderPath: 'Укажите путь к папке.',
       confirmDeleteFile: 'Вы уверены, что хотите удалить файл «{name}»?',
+      confirmDeleteFolder: 'Вы уверены, что хотите удалить папку «{name}» со всем содержимым?',
       renameFile: 'Введите новое имя файла «{name}»:'
     },
     notifications: {
@@ -630,8 +665,12 @@ const messages = {
       folderCreateFailed: 'Не удалось создать папку.',
       fileDeleted: 'Файл удалён.',
       fileDeleteFailed: 'Не удалось удалить файл.',
+      folderDeleted: 'Папка удалена.',
+      folderDeleteFailed: 'Не удалось удалить папку.',
       fileRenamed: 'Файл переименован.',
-      renameFailed: 'Не удалось переименовать файл.'
+      renameFailed: 'Не удалось переименовать файл.',
+      diRepaired: 'Метаданные диаграммы были повреждены и восстановлены. Проверьте расположение элементов перед сохранением.',
+      diGenerated: 'У диаграммы не было данных о расположении. Расположение элементов сгенерировано автоматически — проверьте его перед сохранением.'
     },
     processCheck: {
       valid: '✓ Процесс корректен — все пути достигают End-события.',

@@ -10,6 +10,7 @@ import {
   t
 } from '../i18n/index.js';
 import { ensureUiConfig } from '../shared/uiConfig.js';
+import { ensureDiagramLayout } from '../shared/bpmn-di-layout.js';
 
 const container = document.getElementById('viewer');
 const emptyState = document.getElementById('viewer-empty');
@@ -46,7 +47,7 @@ async function loadDiagram(path) {
     }
 
     const { contents } = await response.json();
-    await viewer.importXML(contents);
+    await viewer.importXML(await ensureDiagramLayout(contents));
     viewer.get('canvas').zoom('fit-viewport');
     currentDiagramPath = path;
     updateViewerTitle(path);

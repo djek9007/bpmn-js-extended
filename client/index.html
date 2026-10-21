@@ -497,8 +497,12 @@
             <button class="button" id="close-storage" data-i18n="storage.close">Close</button>
           </div>
           <div class="file-browser-body">
-            <div class="tree-view" aria-live="polite">
-              <ul id="storage-tree"></ul>
+            <div class="tree-view">
+              <div class="tree-search">
+                <label class="sr-only" for="storage-search" data-i18n="storage.searchLabel">Search files</label>
+                <input type="search" id="storage-search" data-i18n-attrs="placeholder:storage.searchPlaceholder" placeholder="Search files by name..." autocomplete="off" />
+              </div>
+              <ul id="storage-tree" aria-live="polite"></ul>
             </div>
             <div class="file-browser-actions">
               <div class="panel-card">

@@ -181,13 +181,20 @@ app.delete('/api/storage/file', async (req, res) => {
 
   try {
     const absolute = resolveStoragePath(relativePath);
-    const stats = await fs.stat(absolute);
 
-    if (!stats.isFile()) {
-      return res.status(400).json({ error: 'Path must point to a file' });
+    // Guard: '/' and '.' resolve to the storage root, wiping everything below it.
+    if (absolute === diagramsRoot) {
+      return res.status(400).json({ error: 'Cannot delete the storage root' });
     }
 
-    await fs.unlink(absolute);
+    const stats = await fs.stat(absolute);
+
+    if (stats.isDirectory()) {
+      await fs.rm(absolute, { recursive: true });
+    } else {
+      await fs.unlink(absolute);
+    }
+
     res.status(204).end();
   } catch (error) {
     res.status(400).json({ error: error.message });

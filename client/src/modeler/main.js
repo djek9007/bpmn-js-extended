@@ -5,6 +5,8 @@ import resizeAllModule from './resizeAll/index.js';
 import colorFillModule from './colorFill/index.js';
 import { setupProcessCheckUI } from './processCheck/processCheckUI.js';
 import { exportPng, exportSvg, sanitizeFilename } from './export/index.js';
+import { sanitizeBpmnDi } from './bpmn-di-sanitizer.js';
+import { ensureDiagramLayout } from '../shared/bpmn-di-layout.js';
 
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-js.css';
@@ -58,6 +60,7 @@ const storageToggle = document.getElementById('toggle-storage');
 const fileBrowser = document.getElementById('file-browser');
 const closeStorage = document.getElementById('close-storage');
 const storageTree = document.getElementById('storage-tree');
+const storageSearchInput = document.getElementById('storage-search');
 const saveForm = document.getElementById('save-form');
 const savePathInput = document.getElementById('save-path');
 const folderForm = document.getElementById('folder-form');
@@ -100,6 +103,8 @@ const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
 
 let currentActiveNode;
 let currentDiagramName = '';
+let storageTreeData = [];
+let storageSearchQuery = '';
 let currentStoragePath = null;
 let shareOperationInFlight = false;
 let exportInFlight = false;
@@ -615,6 +620,27 @@ function ensureBpmnExtension(path) {
   return path.endsWith('.bpmn') ? path : `${path}.bpmn`;
 }
 
+async function importDiagramXml(xml, { notifyRepair = true } = {}) {
+  const laidOut = await ensureDiagramLayout(xml);
+  const generated = laidOut !== xml;
+  const sanitized = sanitizeBpmnDi(laidOut);
+  const repaired = sanitized !== laidOut;
+
+  if (repaired) {
+    console.warn('Repaired invalid BPMN DI geometry before importing the diagram.');
+  }
+
+  const result = await modeler.importXML(sanitized);
+
+  if (generated && notifyRepair) {
+    alert(t('notifications.diGenerated'));
+  } else if (repaired && notifyRepair) {
+    alert(t('notifications.diRepaired'));
+  }
+
+  return result;
+}
+
 async function generateSnapshotForShare() {
   const { xml } = await modeler.saveXML({ format: true });
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -835,7 +861,7 @@ async function handleXmlSubmit(event) {
   const xml = xmlTextarea.value;
 
   try {
-    await modeler.importXML(xml);
+    await importDiagramXml(xml);
     const canvas = modeler.get('canvas');
     canvas.zoom('fit-viewport');
     xmlDialog?.close();
@@ -876,7 +902,7 @@ bootstrapUi().catch((error) => {
 
 async function createNewDiagram() {
   try {
-    await modeler.importXML(DEFAULT_DIAGRAM);
+    await importDiagramXml(DEFAULT_DIAGRAM, { notifyRepair: false });
     const canvas = modeler.get('canvas');
     canvas.zoom('fit-viewport');
     setDiagramSource(null);
@@ -1145,8 +1171,79 @@ function toggleStorageOverlay(force) {
   fileBrowser.classList.toggle('hidden', !shouldShow);
   fileBrowser.setAttribute('aria-hidden', String(!shouldShow));
   if (shouldShow) {
+    resetStorageSearch();
     refreshStorageTree();
   }
+}
+
+function handleStorageSearchInput(event) {
+  const target = event.target;
+
+  if (!(target instanceof HTMLInputElement)) {
+    return;
+  }
+
+  storageSearchQuery = target.value;
+
+  if (!storageTree) {
+    return;
+  }
+
+  renderTree(storageTreeData);
+}
+
+function resetStorageSearch() {
+  storageSearchQuery = '';
+
+  if (storageSearchInput) {
+    storageSearchInput.value = '';
+  }
+}
+
+function normalizeSearchQuery(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function matchesSearch(name, query) {
+  if (!query) {
+    return true;
+  }
+
+  return typeof name === 'string' && name.toLowerCase().includes(query);
+}
+
+/**
+ * Returns a filtered copy of the storage tree.
+ * Files match by name; directories are kept when their own name matches
+ * (including their whole subtree) or when at least one descendant matches.
+ */
+function filterTreeNodes(nodes, query) {
+  if (!query) {
+    return nodes;
+  }
+
+  return nodes.reduce((result, node) => {
+    if (node.type === 'file') {
+      if (matchesSearch(node.name, query)) {
+        result.push(node);
+      }
+
+      return result;
+    }
+
+    if (matchesSearch(node.name, query)) {
+      result.push(node);
+      return result;
+    }
+
+    const filteredChildren = filterTreeNodes(node.children ?? [], query);
+
+    if (filteredChildren.length) {
+      result.push({ ...node, children: filteredChildren });
+    }
+
+    return result;
+  }, []);
 }
 
 async function refreshStorageTree() {
@@ -1158,7 +1255,8 @@ async function refreshStorageTree() {
     }
 
     const tree = await response.json();
-    renderTree(tree.children ?? []);
+    storageTreeData = tree.children ?? [];
+    renderTree(storageTreeData);
   } catch (error) {
     console.error(error);
     renderStorageMessage('storage.failed');
@@ -1172,15 +1270,18 @@ function renderTree(nodes) {
 
   storageTree.innerHTML = '';
 
-  if (!nodes.length) {
-    renderStorageMessage('storage.empty', 'storage-hint');
+  const query = normalizeSearchQuery(storageSearchQuery);
+  const visibleNodes = filterTreeNodes(nodes, query);
+
+  if (!visibleNodes.length) {
+    renderStorageMessage(query ? 'storage.searchEmpty' : 'storage.empty', 'storage-hint');
     return;
   }
 
   const fragment = document.createDocumentFragment();
 
-  nodes.forEach((node) => {
-    fragment.appendChild(createTreeNode(node));
+  visibleNodes.forEach((node) => {
+    fragment.appendChild(createTreeNode(node, { expand: Boolean(query) }));
   });
 
   storageTree.appendChild(fragment);
@@ -1262,7 +1363,34 @@ function handleLocaleUpdate() {
   updateMoreActionsToggleAria();
 }
 
-function createTreeNode(node) {
+function createDeleteButton(node) {
+  const isDirectory = node.type === 'directory';
+  const deleteBtn = document.createElement('button');
+  deleteBtn.type = 'button';
+  deleteBtn.className = 'tree-item-delete-button';
+  deleteBtn.title = t(isDirectory ? 'actions.deleteFolder.title' : 'actions.deleteFile.title');
+  deleteBtn.setAttribute('aria-label', t(isDirectory ? 'actions.deleteFolder.ariaLabel' : 'actions.deleteFile.ariaLabel'));
+  deleteBtn.innerHTML = `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 6h18"/>
+    <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/>
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+    <path d="M10 11v6M14 11v6"/>
+  </svg>`;
+
+  deleteBtn.addEventListener('click', async (event) => {
+    event.stopPropagation();
+    const promptKey = isDirectory ? 'prompts.confirmDeleteFolder' : 'prompts.confirmDeleteFile';
+    const confirmed = confirm(t(promptKey, { name: node.name }));
+    if (!confirmed) {
+      return;
+    }
+    await deleteFromStorage(node.path, isDirectory);
+  });
+
+  return deleteBtn;
+}
+
+function createTreeNode(node, { expand = false } = {}) {
   const li = document.createElement('li');
   const item = document.createElement('div');
   item.className = 'tree-item';
@@ -1280,24 +1408,37 @@ function createTreeNode(node) {
   if (node.type === 'directory') {
     const caret = document.createElement('span');
     caret.className = 'tree-caret';
-    caret.textContent = '▸';
+    caret.textContent = expand ? '▾' : '▸';
     caret.setAttribute('aria-hidden', 'true');
     label.prepend(caret);
     item.appendChild(label);
+
+    const folderActions = document.createElement('div');
+    folderActions.className = 'tree-item-actions';
+    folderActions.appendChild(createDeleteButton(node));
+    item.appendChild(folderActions);
 
     let childrenUl = null;
     let expanded = false;
     let rendered = false;
 
-    const toggleDirectory = () => {
-      expanded = !expanded;
+    const buildChildren = () => {
+      if (rendered) {
+        return;
+      }
+
+      childrenUl = buildChildrenList(node.children ?? [], { expand });
+      li.appendChild(childrenUl);
+      rendered = true;
+    };
+
+    const setExpanded = (next) => {
+      expanded = next;
       caret.textContent = expanded ? '▾' : '▸';
       item.classList.toggle('expanded', expanded);
 
-      if (expanded && !rendered) {
-        childrenUl = buildChildrenList(node.children ?? []);
-        li.appendChild(childrenUl);
-        rendered = true;
+      if (expanded) {
+        buildChildren();
       }
 
       if (childrenUl) {
@@ -1308,12 +1449,17 @@ function createTreeNode(node) {
     item.addEventListener('click', (event) => {
       event.stopPropagation();
       setActiveTreeNode(item);
-      toggleDirectory();
+      setExpanded(!expanded);
       const prefix = node.path ? `${node.path.replace(/\\/g, '/')}/` : '';
       savePathInput.value = prefix;
     });
 
     li.appendChild(item);
+
+    if (expand) {
+      setExpanded(true);
+    }
+
     return li;
   }
 
@@ -1337,29 +1483,7 @@ function createTreeNode(node) {
   });
 
   actions.appendChild(renameBtn);
-
-  const deleteBtn = document.createElement('button');
-  deleteBtn.type = 'button';
-  deleteBtn.className = 'tree-item-delete-button';
-  deleteBtn.title = t('actions.deleteFile.title');
-  deleteBtn.setAttribute('aria-label', t('actions.deleteFile.ariaLabel'));
-  deleteBtn.innerHTML = `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M3 6h18"/>
-    <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/>
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-    <path d="M10 11v6M14 11v6"/>
-  </svg>`;
-
-  deleteBtn.addEventListener('click', async (event) => {
-    event.stopPropagation();
-    const confirmed = confirm(t('prompts.confirmDeleteFile', { name: node.name }));
-    if (!confirmed) {
-      return;
-    }
-    await deleteFileFromStorage(node.path);
-  });
-
-  actions.appendChild(deleteBtn);
+  actions.appendChild(createDeleteButton(node));
 
   item.appendChild(actions);
 
@@ -1374,13 +1498,13 @@ function createTreeNode(node) {
   return li;
 }
 
-function buildChildrenList(children) {
+function buildChildrenList(children, { expand = false } = {}) {
   const ul = document.createElement('ul');
   ul.className = 'tree-children hidden';
 
   if (children.length) {
     children.forEach((child) => {
-      ul.appendChild(createTreeNode(child));
+      ul.appendChild(createTreeNode(child, { expand }));
     });
   } else {
     const empty = document.createElement('li');
@@ -1413,7 +1537,7 @@ async function loadDiagramFromStorage(path) {
     }
 
     const { contents } = await response.json();
-    await modeler.importXML(contents);
+    await importDiagramXml(contents);
     modeler.get('canvas').zoom('fit-viewport');
     const normalizedPath = normalizeStoragePath(path);
     setDiagramSource(normalizedPath);
@@ -1515,7 +1639,7 @@ async function renameFileFromStorage(path) {
   }
 }
 
-async function deleteFileFromStorage(path) {
+async function deleteFromStorage(path, isDirectory) {
   try {
     const normalizedPath = normalizeStoragePath(path);
     const response = await fetch(`/api/storage/file?${new URLSearchParams({ path: normalizedPath })}`, {
@@ -1523,10 +1647,12 @@ async function deleteFileFromStorage(path) {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to delete file');
+      throw new Error('Failed to delete storage entry');
     }
 
-    if (currentStoragePath === normalizedPath) {
+    const current = normalizeStoragePath(currentStoragePath || '');
+
+    if (current === normalizedPath || (isDirectory && current.startsWith(`${normalizedPath}/`))) {
       setDiagramSource(null);
       if (savePathInput) {
         savePathInput.value = '';
@@ -1534,10 +1660,10 @@ async function deleteFileFromStorage(path) {
     }
 
     await refreshStorageTree();
-    alert(t('notifications.fileDeleted'));
+    alert(t(isDirectory ? 'notifications.folderDeleted' : 'notifications.fileDeleted'));
   } catch (error) {
     console.error(error);
-    alert(t('notifications.fileDeleteFailed'));
+    alert(t(isDirectory ? 'notifications.folderDeleteFailed' : 'notifications.fileDeleteFailed'));
   }
 }
 
@@ -1604,7 +1730,7 @@ fileInput?.addEventListener('change', async (event) => {
 
   try {
     const text = await file.text();
-    await modeler.importXML(text);
+    await importDiagramXml(text);
     modeler.get('canvas').zoom('fit-viewport');
     const suggestedPath = file.name.replace(/\.xml$/i, '.bpmn');
     if (savePathInput) {
@@ -1744,6 +1870,7 @@ deleteButton?.addEventListener('click', () => {
 
 storageToggle?.addEventListener('click', () => toggleStorageOverlay());
 closeStorage?.addEventListener('click', () => toggleStorageOverlay(false));
+storageSearchInput?.addEventListener('input', handleStorageSearchInput);
 
 window.addEventListener('keydown', handleKeyboardShortcuts, true);
 

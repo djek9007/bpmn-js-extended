@@ -341,6 +341,35 @@
   list-style: none;
 }
 
+.tree-search {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.25rem;
+  background: var(--tree-bg);
+  transition: background 0.35s ease;
+}
+
+.tree-search input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--input-border);
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: var(--input-bg);
+  color: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tree-search input:focus {
+  outline: none;
+  border-color: var(--button-primary, #0d6efd);
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.2);
+}
+
 .tree-item {
   display: flex;
   align-items: center;
