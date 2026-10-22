@@ -1,0 +1,13 @@
+services:
+  bpmn-modeler:
+    build: .
+    image: bpmn-js-extended
+    container_name: bpmn_modeler
+    ports:
+      - "3000:3000"
+    environment:
+      DATA_DIR: /data
+    volumes:
+      # Diagrams are plain files in ./data on the host, not in a Docker volume.
+      - ./data:/data
+    restart: unless-stopped

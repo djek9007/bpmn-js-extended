@@ -63,9 +63,20 @@ Example configuration:
 
 ## Getting Started
 
-### Local development
+### Quick start (any machine with Docker)
 
-Requires Node.js 20 or newer.
+```bash
+git clone https://github.com/djek9007/bpmn-js-extended.git
+cd bpmn-js-extended
+docker compose up -d --build
+```
+
+Open [http://localhost:3000](http://localhost:3000). Nothing else needs to be installed — the image
+contains Node and the built client, and diagrams are stored as plain files in `./data` on the host.
+
+Stop with `docker compose down`. To upgrade: `git pull && docker compose up -d --build`.
+
+### Local development (Node.js 20+)
 
 ```bash
 npm install
@@ -75,30 +86,24 @@ npm start
 
 The server listens on [http://localhost:3000](http://localhost:3000).
 
-Storage defaults to the `bpmn-data` folder **next to** the project (i.e. `../bpmn-data`, the same
-folder `docker-compose.yml` mounts), so locally created diagrams and diagrams created in Docker are
-the same files. The folder is created automatically. Point `DATA_DIR` somewhere else if you prefer:
+Both flows use the same `./data` folder, created automatically:
 
-```bash
-DATA_DIR=/path/to/storage npm start
-```
+- `data/diagrams/` – BPMN diagrams. Paths used by the UI and API are relative to this folder.
+- `data/config/` – optional `ui-config.json` and assets.
 
-### Docker image
+Point `DATA_DIR` somewhere else if you prefer (`DATA_DIR=/path/to/storage npm start`, or change the
+volume in `docker-compose.yml`). On Linux the container writes as root, so files created through
+Docker may belong to `root`; `sudo chown -R "$UID:$GID" data` fixes ownership if `npm start` cannot
+write them.
 
-The repository root ships a `docker-compose.yml`, which is the shortest path:
+> `data/` is git-ignored on purpose. Diagrams are your own content — copy the folder to another
+> machine instead of committing it.
 
-```bash
-docker compose up -d --build
-```
-
-Diagrams are bind-mounted from `./bpmn-data` on the host, so they are plain files you can copy,
-back up or commit — Docker does not keep them in a hidden volume.
-
-Or build and run the image by hand:
+### Docker image by hand
 
 ```bash
 docker build -t bpmn-js-extended .
-docker run -it --rm -p 3000:3000 -v $(pwd)/bpmn-data:/data bpmn-js-extended
+docker run -it --rm -p 3000:3000 -v "$(pwd)/data:/data" bpmn-js-extended
 ```
 
 Without `-v`, Docker creates an anonymous volume for `/data` and your diagrams end up somewhere
@@ -116,7 +121,7 @@ under `/var/lib/docker` — always pass the mount.
 
 ## Volume layout
 
-All read and write operations are scoped to the `DATA_DIR` (`/data` inside the Docker image, `../bpmn-data` for a local `npm start`). The server manages two subdirectories:
+All read and write operations are scoped to `DATA_DIR` (`/data` inside the Docker image, `./data` for a local `npm start`). The server manages two subdirectories:
 
 - `config/` – optional runtime configuration and assets (e.g. `ui-config.json`, `assets/logo.svg`).
 - `diagrams/` – BPMN diagrams created via the modeler (nested folders supported, e.g. `order/process.bpmn`).

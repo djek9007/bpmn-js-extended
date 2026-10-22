@@ -9,9 +9,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3000;
-// Local default: ../bpmn-data next to the project, shared with docker-compose.
+// Local default: ./data inside the project, the same folder docker-compose mounts.
 // Docker sets DATA_DIR=/data explicitly (see Dockerfile).
-const dataRoot = path.resolve(process.env.DATA_DIR || path.join(__dirname, '..', '..', 'bpmn-data'));
+const dataRoot = path.resolve(process.env.DATA_DIR || path.join(__dirname, '..', 'data'));
 const configRoot = path.join(dataRoot, 'config');
 const diagramsRoot = path.join(dataRoot, 'diagrams');
 
