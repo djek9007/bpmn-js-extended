@@ -65,27 +65,44 @@ Example configuration:
 
 ### Local development
 
+Requires Node.js 20 or newer.
+
 ```bash
 npm install
 npm run build
 npm start
 ```
 
-The server listens on [http://localhost:3000](http://localhost:3000) by default and uses the `./data` directory for storage if `DATA_DIR` is not set.
+The server listens on [http://localhost:3000](http://localhost:3000).
+
+Storage defaults to the `bpmn-data` folder **next to** the project (i.e. `../bpmn-data`, the same
+folder `docker-compose.yml` mounts), so locally created diagrams and diagrams created in Docker are
+the same files. The folder is created automatically. Point `DATA_DIR` somewhere else if you prefer:
+
+```bash
+DATA_DIR=/path/to/storage npm start
+```
 
 ### Docker image
 
-Build the container image:
+The repository root ships a `docker-compose.yml`, which is the shortest path:
+
+```bash
+docker compose up -d --build
+```
+
+Diagrams are bind-mounted from `./bpmn-data` on the host, so they are plain files you can copy,
+back up or commit — Docker does not keep them in a hidden volume.
+
+Or build and run the image by hand:
 
 ```bash
 docker build -t bpmn-js-extended .
+docker run -it --rm -p 3000:3000 -v $(pwd)/bpmn-data:/data bpmn-js-extended
 ```
 
-Run the container with a mounted volume for persistent BPMN diagrams:
-
-```bash
-docker run -it --rm -p 3000:3000 -v $(pwd)/data:/data bpmn-js-extended
-```
+Without `-v`, Docker creates an anonymous volume for `/data` and your diagrams end up somewhere
+under `/var/lib/docker` — always pass the mount.
 
 - Visit `http://localhost:3000/` for the modeler.
 - Visit `http://localhost:3000/viewer?path=example.bpmn` for the viewer (adjust the `path` parameter to the stored file).
@@ -99,7 +116,7 @@ docker run -it --rm -p 3000:3000 -v $(pwd)/data:/data bpmn-js-extended
 
 ## Volume layout
 
-All read and write operations are scoped to the `DATA_DIR` (defaults to `/data`). The server manages two subdirectories:
+All read and write operations are scoped to the `DATA_DIR` (`/data` inside the Docker image, `../bpmn-data` for a local `npm start`). The server manages two subdirectories:
 
 - `config/` – optional runtime configuration and assets (e.g. `ui-config.json`, `assets/logo.svg`).
 - `diagrams/` – BPMN diagrams created via the modeler (nested folders supported, e.g. `order/process.bpmn`).
