@@ -17,7 +17,7 @@ const SERVER = process.env.BPMN_SERVER || 'http://localhost:3000';
 
 function parseArgs(argv) {
   const [command, ...rest] = argv;
-  const options = { server: SERVER, out: null };
+  const options = { server: SERVER, out: null, rebuild: false };
   const positional = [];
 
   for (let i = 0; i < rest.length; i += 1) {
@@ -28,6 +28,8 @@ function parseArgs(argv) {
     } else if (item === '--server') {
       options.server = rest[i + 1];
       i += 1;
+    } else if (item === '--rebuild') {
+      options.rebuild = true;
     } else {
       positional.push(item);
     }
@@ -68,7 +70,10 @@ async function main() {
       'Использование:',
       '  node scripts/bpmn.mjs layout <file.bpmn> [-o out.bpmn]',
       '  node scripts/bpmn.mjs check  <file.bpmn>',
-      '  node scripts/bpmn.mjs push   <path в редакторе> [--server http://localhost:3000]',
+      '  node scripts/bpmn.mjs push   <path в редакторе> [--rebuild] [--server http://localhost:3000]',
+      '',
+      'push: сохраняет DI пользователя, если файл уже имеет валидную DI-секцию.',
+      '      --rebuild принудительно пересобирает DI (полная раскладка заново).',
       ''
     ].join('\n'));
     return 0;
@@ -101,6 +106,26 @@ async function main() {
     if (!path) throw new Error('Укажите путь в редакторе: node scripts/bpmn.mjs push <path>');
 
     const original = await readFromEditor(options.server, path);
+
+    // Preserve user's DI: if the file already has a DI section and it passes
+    // validation, keep it as-is. Only rebuild when the user asks (--rebuild)
+    // or the current DI is broken or missing.
+    const hasDi = original.includes('<bpmndi:BPMNDiagram');
+    if (hasDi && !options.rebuild) {
+      const currentCheck = await checkBpmnXml(original);
+      if (currentCheck.summary.error === 0) {
+        printReport(currentCheck);
+        process.stdout.write([
+          '',
+          `DI пользователя сохранён (0 ошибок, --rebuild для пересборки).`,
+          `Файл не изменялся: ${path}`,
+          `Ссылка: ${options.server}/?diagram=${encodeURIComponent(path)}`,
+          ''
+        ].join('\n'));
+        return 0;
+      }
+    }
+
     const laidOut = await layoutBpmnXml(original);
     const result = await checkBpmnXml(laidOut);
     printReport(result);

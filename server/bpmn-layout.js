@@ -25,6 +25,8 @@ const LABEL_HEIGHT = 14;
 
 const PALETTE = {
   start: { fill: '#d4edda', stroke: '#28a745' },
+  user: { fill: '#cce5ff', stroke: '#0d6efd' },
+  service: { fill: '#e9ecef', stroke: '#495057' },
   split: { fill: '#f8d7da', stroke: '#dc3545' },
   merge: { fill: '#fff3cd', stroke: '#ffc107' },
   end: { fill: '#e2d5f6', stroke: '#6f42c1' }
@@ -66,9 +68,9 @@ function nodeSize(element) {
   if (EVENT_TYPES.has(type)) return { width: 36, height: 36 };
   if (GATEWAY_TYPES.has(type)) return { width: 50, height: 50 };
   if (TASK_TYPES.has(type)) {
-    // Three text lines fit into an 80px box; widen the box instead of overflowing it.
+    // Widen the box so the text fits without overflowing; keep 80px height.
     const lines = Math.max(1, Math.ceil(String(name).length / 3));
-    const width = Math.min(280, Math.max(120, Math.ceil((lines * 7.2 + 4) * 3)));
+    const width = Math.min(280, Math.max(140, Math.ceil((lines * 7.2 + 4) * 3)));
     return { width, height: 80 };
   }
   if (ANNOTATION_TYPES.has(type)) {
@@ -608,10 +610,13 @@ function flowLabelBounds(points, name) {
   return { x: Math.round(x), y: Math.round(y), width: Math.round(width), height: LABEL_HEIGHT };
 }
 
-/** Favotit colour coding for events and gateways. */
+/** Favorit colour coding for events, gateways and tasks. */
 function shapeColours(node, outgoingCount, incomingCount) {
   if (node.type === 'bpmn:StartEvent') return PALETTE.start;
   if (node.type === 'bpmn:EndEvent') return PALETTE.end;
+  if (node.type === 'bpmn:UserTask') return PALETTE.user;
+  if (node.type === 'bpmn:ServiceTask') return PALETTE.service;
+  if (node.type === 'bpmn:BoundaryEvent') return PALETTE.service;
   if (GATEWAY_TYPES.has(node.type)) {
     if (outgoingCount > 1) return PALETTE.split;
     if (incomingCount > 1) return PALETTE.merge;
