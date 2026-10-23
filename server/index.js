@@ -3,6 +3,7 @@ import morgan from 'morgan';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
+import { layoutBpmnXml } from './bpmn-layout.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -238,6 +239,36 @@ app.post('/api/storage/directory', async (req, res) => {
     const absolute = resolveStoragePath(relativePath);
     await fs.mkdir(absolute, { recursive: true });
     res.status(201).end();
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Builds the DI section of a diagram. Takes a path in the storage or the XML itself,
+// returns the laid out XML without saving it.
+app.post('/api/storage/layout', async (req, res) => {
+  const { path: relativePath, contents } = req.body;
+
+  try {
+    let xml = contents;
+
+    if (typeof xml !== 'string') {
+      if (!relativePath) {
+        return res.status(400).json({ error: 'Path or contents are required' });
+      }
+
+      const absolute = resolveStoragePath(relativePath);
+      const stats = await fs.stat(absolute);
+
+      if (!stats.isFile()) {
+        return res.status(400).json({ error: 'Path must point to a file' });
+      }
+
+      xml = await fs.readFile(absolute, 'utf-8');
+    }
+
+    const laidOut = await layoutBpmnXml(xml);
+    res.json({ path: relativePath ?? null, contents: laidOut });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
